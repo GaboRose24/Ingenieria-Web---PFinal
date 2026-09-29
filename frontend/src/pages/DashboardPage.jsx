@@ -43,14 +43,34 @@ const DashboardPage = () => {
     cargarUsuarios();
   }, [cargarUsuarios]);
 
-  /** Guarda los cambios de un usuario editado */
+  /**
+   * Guarda los cambios de un usuario editado.
+   *
+   * IMPORTANTE: cuando el backend responde con un código de error HTTP
+   * (401, 403, 500...), Axios lanza una excepción ANTES de que el
+   * `if (!resultado.success)` de abajo se ejecute — por eso el mensaje
+   * real (ej. "No tienes permiso para modificar este usuario" que
+   * devuelve checkRol.adminOPropietario) se rescata en el catch, desde
+   * `err.response.data.errors`, y no desde `err.message` (que solo
+   * traería el texto genérico de Axios, tipo "Request failed with
+   * status code 403").
+   */
   const handleGuardar = async (id, datos) => {
-    const { data: resultado } = await api.put(`/users/${id}`, datos);
-    if (!resultado.success) {
-      throw new Error(resultado.errors?.general || resultado.errors?.correo || 'Error al actualizar');
+    try {
+      const { data: resultado } = await api.put(`/users/${id}`, datos);
+      if (!resultado.success) {
+        throw new Error(resultado.errors?.general || resultado.errors?.correo || 'Error al actualizar');
+      }
+      setUsuarioEditar(null);
+      cargarUsuarios();
+    } catch (err) {
+      const mensaje =
+        err.response?.data?.errors?.general ||
+        err.response?.data?.errors?.correo ||
+        err.message ||
+        'Error al actualizar';
+      throw new Error(mensaje);
     }
-    setUsuarioEditar(null);
-    cargarUsuarios();
   };
 
   /** Realiza la eliminación LÓGICA del usuario (activo = 0 en la BD) */

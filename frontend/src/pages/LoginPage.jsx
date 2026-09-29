@@ -1,9 +1,5 @@
 /**
- * pages/LoginPage.jsx
- *
- * Formulario de inicio de sesión (requisito 3).
- * Llama a AuthContext.login(), que guarda el JWT y redirige
- * al dashboard si las credenciales son correctas.
+ * Formulario de inicio de sesión.
  */
 
 import { useState } from 'react';
@@ -38,7 +34,7 @@ const LoginPage = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>🔐 Iniciar sesión</h1>
+          <h1> Iniciar sesión</h1>
           <p>Ingresa tus credenciales para continuar</p>
         </div>
 

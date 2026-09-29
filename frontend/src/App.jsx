@@ -1,14 +1,8 @@
 /**
  * @file App.jsx
  * @description Componente raíz de la aplicación.
- *              Define el sistema de rutas con React Router v6.
- *
- * Rutas:
- *   /            → redirige a /login o /dashboard según sesión
- *   /login       → página de inicio de sesión (pública)
- *   /registro    → página de registro (pública)
- *   /dashboard   → galería de usuarios (protegida, requiere auth)
- */
+*/
+ 
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';

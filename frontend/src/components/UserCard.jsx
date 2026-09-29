@@ -1,57 +1,82 @@
 /**
- * components/UserCard.jsx
+ * context/AuthContext.jsx
  *
- * Tarjeta individual de usuario para la galería del dashboard
- * (requisito 5). El avatar se genera con ui-avatars.com a partir
- * del nombre, igual que en el ejemplo de galería de prácticas
- * anteriores (galleryReact/TarjetaUsuario.jsx).
+ * Contexto global de autenticación.
+ * Expone: usuario actual, token JWT, funciones login/logout.
+ * El token y el usuario se persisten en localStorage para
+ * sobrevivir recargas de página (requisito 4 — seguimiento
+ * del login en las interfaces posteriores).
  *
- * Reglas de permisos (requisito 5):
- *   - admin     → puede editar y eliminar a cualquier usuario
- *   - operativo → solo puede editar su propio perfil
+ * Uso en cualquier componente:
+ *   const { usuario, login, logout, cargando } = useAuth();
  */
 
-import { useAuth } from '../context/AuthContext';
+import { createContext, useContext, useState } from 'react';
+import api from '../api/axiosConfig';
 
-const colorPorRol = { admin: '4361ee', operativo: '06d6a0' };
+const AuthContext = createContext(null);
 
-const UserCard = ({ usuario, onEditar, onEliminar }) => {
-  const { usuario: usuarioActual } = useAuth();
+export const AuthProvider = ({ children }) => {
+  // Leer datos persistidos al iniciar la app
+  const [usuario, setUsuario] = useState(() => {
+    const stored = localStorage.getItem('usuario');
+    return stored ? JSON.parse(stored) : null;
+  });
 
-  const esAdmin = usuarioActual?.rol === 'admin';
-  const esPropietario = usuarioActual?.id === usuario.id;
-  const puedeEditar = esAdmin || esPropietario;
-  const puedeEliminar = esAdmin && usuarioActual?.id !== usuario.id; // evita autoeliminarse
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(null);
 
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(usuario.nombre)}&size=128&background=${colorPorRol[usuario.rol] || '999'}&color=fff`;
+  /**
+   * Inicia sesión: llama a la API, guarda token y datos del usuario.
+   * @param {string} correo
+   * @param {string} contrasena
+   */
+  const login = async (correo, contrasena) => {
+    setCargando(true);
+    setError(null);
+    try {
+      const { data: resultado } = await api.post('/auth/login', { correo, contrasena });
+
+      if (!resultado.success) {
+        const msg = resultado.errors?.general || 'Error al iniciar sesión';
+        setError(msg);
+        throw new Error(msg);
+      }
+
+      const { token, usuario: datosUsuario } = resultado.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('usuario', JSON.stringify(datosUsuario));
+      setUsuario(datosUsuario);
+    } catch (err) {
+      const msg = err.response?.data?.errors?.general || err.message || 'Error al iniciar sesión';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  /**
+   * Cierra sesión: elimina el token y los datos del usuario del cliente.
+   * El backend usa JWT sin estado (stateless), por lo que "invalidar"
+   * el token equivale a descartarlo del lado del cliente.
+   */
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    setUsuario(null);
+  };
 
   return (
-    <div className="user-card">
-      <img className="card-avatar-img" src={avatarUrl} alt={usuario.nombre} />
-
-      <div className="card-info">
-        <h3 className="card-nombre">{usuario.nombre}</h3>
-        <p className="card-email">📧 {usuario.correo}</p>
-        <p className="card-fecha">📅 {new Date(usuario.created_at).toLocaleDateString('es-MX')}</p>
-        <span className={`badge ${usuario.rol === 'admin' ? 'badge-admin' : 'badge-op'}`}>
-          {usuario.rol}
-        </span>
-      </div>
-
-      <div className="card-actions">
-        {puedeEditar && (
-          <button className="btn btn-edit" onClick={() => onEditar(usuario)}>
-            ✏️ Editar
-          </button>
-        )}
-        {puedeEliminar && (
-          <button className="btn btn-danger" onClick={() => onEliminar(usuario.id)}>
-            🗑️ Eliminar
-          </button>
-        )}
-      </div>
-    </div>
+    <AuthContext.Provider value={{ usuario, login, logout, cargando, error, setError }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 
-export default UserCard;
+/** Hook para consumir el contexto de autenticación. */
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth debe usarse dentro de <AuthProvider>');
+  return ctx;
+};

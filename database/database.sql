@@ -1,9 +1,4 @@
--- =====================================================================
--- Base de datos: Práctica Final
--- Tabla `users` — alineada a la API REST de prácticas anteriores
--- Campos en español: nombre, correo, contrasena, rol
--- Equipo: 2 integrantes
--- =====================================================================
+
 
 CREATE DATABASE IF NOT EXISTS practica_final
   CHARACTER SET utf8mb4
@@ -23,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- ── Usuario administrador de prueba ────────────────────────────────
+--  Usuario administrador de prueba 
 -- Contraseña: Admin123!
 INSERT IGNORE INTO users (nombre, correo, contrasena, rol)
 VALUES (
@@ -33,7 +28,7 @@ VALUES (
   'admin'
 );
 
--- ── Usuario operativo de prueba ────────────────────────────────────
+--  Usuario operativo de prueba 
 -- Contraseña: User123!
 INSERT IGNORE INTO users (nombre, correo, contrasena, rol)
 VALUES (
